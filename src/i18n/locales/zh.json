@@ -1,0 +1,110 @@
+{
+  "nav": {
+    "dashboard": "仪表板",
+    "upload": "上传内容",
+    "custom_quiz": "自定义测验"
+  },
+  "dashboard": {
+    "title": "您的学习仪表板",
+    "subtitle": "跟踪您的进度并继续您的学习旅程",
+    "upload_first_content": "上传您的第一个内容",
+    "upload_description": "通过上传PDF文档开始创建您的个性化学习体验。",
+    "upload_button": "上传内容",
+    "my_content": "我的学习内容",
+    "items_count": "{{count}} 项",
+    "content_status": {
+      "new": "新的",
+      "in_progress": "进行中",
+      "completed": "已完成",
+      "processing": "处理中"
+    },
+    "continue_learning": "继续学习",
+    "start_learning": "开始学习",
+    "view_summary": "查看摘要",
+    "take_quiz": "参加测验"
+  },
+  "upload": {
+    "title": "上传您的学习内容",
+    "subtitle": "上传PDF文档，通过AI生成的摘要和测验创建个性化学习体验。",
+    "drag_drop": "拖放PDF文件",
+    "drag_drop_active": "在此放下您的PDF！",
+    "click_browse": "或点击浏览您的计算机",
+    "choose_files": "选择文件",
+    "supported_files": "支持：每个PDF文件最大10MB",
+    "uploaded_files": "已上传文件",
+    "processing": "处理中...",
+    "process_files": "处理文件",
+    "how_it_works": "工作原理 ✨",
+    "step1_title": "1. 上传PDF",
+    "step1_desc": "从您的设备拖放或选择PDF文件",
+    "step2_title": "2. AI处理",
+    "step2_desc": "我们的AI提取文本并创建个性化摘要",
+    "step3_title": "3. 开始学习",
+    "step3_desc": "获取互动测验并跟踪您的进度"
+  },
+  "learning": {
+    "reading_progress": "阅读进度",
+    "start_reading": "开始阅读",
+    "pause_reading": "暂停阅读",
+    "reading_complete": "阅读完成！",
+    "complete_progress": "完成",
+    "take_quiz": "参加测验",
+    "sections": "章节"
+  },
+  "quiz": {
+    "quiz_title": "知识测验",
+    "question": "第 {{current}} 题，共 {{total}} 题",
+    "next_question": "下一题",
+    "submit_quiz": "提交测验",
+    "quiz_complete": "测验完成！",
+    "score": "您的得分：{{score}}%",
+    "performance": {
+      "excellent": "优秀！🎉",
+      "good": "干得好！👍",
+      "needs_improvement": "继续练习！💪"
+    },
+    "view_results": "查看结果",
+    "retake_quiz": "重新测验"
+  },
+  "summary": {
+    "title": "内容摘要",
+    "overall_progress": "整体进度",
+    "status": "状态",
+    "study_time": "学习时间",
+    "main_topics": "涵盖的主要主题",
+    "detailed_sections": "详细章节",
+    "learning_metrics": "学习指标",
+    "reading_time": "阅读时间",
+    "difficulty": "难度",
+    "topics_covered": "涵盖主题",
+    "continue_learning_button": "继续学习",
+    "take_quiz_button": "参加测验"
+  },
+  "common": {
+    "loading": "加载中...",
+    "error": "错误",
+    "success": "成功",
+    "cancel": "取消",
+    "save": "保存",
+    "edit": "编辑",
+    "delete": "删除",
+    "back": "返回",
+    "next": "下一个",
+    "previous": "上一个",
+    "close": "关闭",
+    "minutes": "分钟",
+    "language": "语言"
+  },
+  "language_selector": {
+    "select_language": "选择语言",
+    "languages": {
+      "en": "English",
+      "hi": "हिंदी",
+      "gu": "ગુજરાતી",
+      "mr": "मराठी",
+      "bn": "বাংলা",
+      "ru": "Русский",
+      "zh": "中文"
+    }
+  }
+}

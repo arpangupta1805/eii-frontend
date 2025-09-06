@@ -1,0 +1,110 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "upload": "Upload Content",
+    "custom_quiz": "Custom Quiz"
+  },
+  "dashboard": {
+    "title": "Your Learning Dashboard",
+    "subtitle": "Track your progress and continue your learning journey",
+    "upload_first_content": "Upload Your First Content",
+    "upload_description": "Get started by uploading a PDF document to create your personalized learning experience.",
+    "upload_button": "Upload Content",
+    "my_content": "My Learning Content",
+    "items_count": "{{count}} items",
+    "content_status": {
+      "new": "New",
+      "in_progress": "In Progress", 
+      "completed": "Completed",
+      "processing": "Processing"
+    },
+    "continue_learning": "Continue Learning",
+    "start_learning": "Start Learning",
+    "view_summary": "View Summary",
+    "take_quiz": "Take Quiz"
+  },
+  "upload": {
+    "title": "Upload Your Learning Content",
+    "subtitle": "Upload PDF documents to create personalized learning experiences with AI-generated summaries and quizzes.",
+    "drag_drop": "Drag & drop PDF files",
+    "drag_drop_active": "Drop your PDFs here!",
+    "click_browse": "or click to browse your computer",
+    "choose_files": "Choose Files",
+    "supported_files": "Supports: PDF files up to 10MB each",
+    "uploaded_files": "Uploaded Files",
+    "processing": "Processing...",
+    "process_files": "Process Files",
+    "how_it_works": "How it works ✨",
+    "step1_title": "1. Upload PDFs",
+    "step1_desc": "Drag and drop or select PDF files from your device",
+    "step2_title": "2. AI Processing", 
+    "step2_desc": "Our AI extracts text and creates personalized summaries",
+    "step3_title": "3. Start Learning",
+    "step3_desc": "Get interactive quizzes and track your progress"
+  },
+  "learning": {
+    "reading_progress": "Reading Progress",
+    "start_reading": "Start Reading",
+    "pause_reading": "Pause Reading", 
+    "reading_complete": "Reading Complete!",
+    "complete_progress": "complete",
+    "take_quiz": "Take Quiz",
+    "sections": "sections"
+  },
+  "quiz": {
+    "quiz_title": "Knowledge Quiz",
+    "question": "Question {{current}} of {{total}}",
+    "next_question": "Next Question",
+    "submit_quiz": "Submit Quiz",
+    "quiz_complete": "Quiz Complete!",
+    "score": "Your Score: {{score}}%",
+    "performance": {
+      "excellent": "Excellent! 🎉",
+      "good": "Good job! 👍", 
+      "needs_improvement": "Keep practicing! 💪"
+    },
+    "view_results": "View Results",
+    "retake_quiz": "Retake Quiz"
+  },
+  "summary": {
+    "title": "Content Summary",
+    "overall_progress": "Overall Progress",
+    "status": "Status",
+    "study_time": "Study Time",
+    "main_topics": "Main Topics Covered",
+    "detailed_sections": "Detailed Sections",
+    "learning_metrics": "Learning Metrics",
+    "reading_time": "Reading Time",
+    "difficulty": "Difficulty",
+    "topics_covered": "Topics Covered",
+    "continue_learning_button": "Continue Learning",
+    "take_quiz_button": "Take Quiz"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "save": "Save",
+    "edit": "Edit",
+    "delete": "Delete",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "close": "Close",
+    "minutes": "minutes",
+    "language": "Language"
+  },
+  "language_selector": {
+    "select_language": "Select Language",
+    "languages": {
+      "en": "English",
+      "hi": "हिंदी",
+      "gu": "ગુજરાતી", 
+      "mr": "मराठी",
+      "bn": "বাংলা",
+      "ru": "Русский",
+      "zh": "中文"
+    }
+  }
+}
