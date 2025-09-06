@@ -14,7 +14,6 @@ import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
 import { useLearning } from '../contexts/LearningContext';
 import { useTranslation } from 'react-i18next';
 import { useContentTranslation } from '../hooks/useContentTranslation';
-import TranslatedText from '../components/TranslatedText';
 
 const Summary = () => {
   const { contentId } = useParams();
