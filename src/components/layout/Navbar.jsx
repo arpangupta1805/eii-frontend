@@ -20,12 +20,14 @@ const Navbar = () => {
           {/* Logo */}
           <div className="flex items-center">
             <Link to="/" className="flex items-center space-x-2">
-              <div className="bg-blue-600 text-white p-2 rounded-lg">
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2L2 7v10c0 5.55 3.84 9.739 9 11 5.16-1.261 9-5.45 9-11V7l-10-5z"/>
-                </svg>
+              <div className="p-1 rounded-lg">
+                <img 
+                  src="/YATI_ Master Your Mind.png" 
+                  alt="YATI Logo" 
+                  className="w-10 h-10 object-contain"
+                />
               </div>
-              <span className="text-xl font-bold text-gray-900">EII Learning</span>
+              <span className="text-xl font-bold text-gray-900">YATI-Discipline</span>
             </Link>
           </div>
 
