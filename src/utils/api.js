@@ -137,6 +137,11 @@ export const contentAPI = {
 
 // Quiz API calls
 export const quizAPI = {
+  // Get all user quizzes
+  getAllQuizzes: async (page = 1, limit = 10, status = 'all') => {
+    return api.get(`/quiz/all?page=${page}&limit=${limit}&status=${status}`);
+  },
+
   // Generate quiz from content
   generate: async (contentId, questionsPerSection = 3) => {
     return api.post('/quiz/generate', { 
@@ -183,6 +188,11 @@ export const quizAPI = {
   // Get quiz by quiz ID (for custom quizzes)
   getQuizById: async (quizId) => {
     return api.get(`/quiz/${quizId}`);
+  },
+
+  // Get quiz attempts by quiz ID
+  getQuizAttempts: async (quizId) => {
+    return api.get(`/quiz/${quizId}/attempts`);
   },
 
   // Legacy methods for backward compatibility

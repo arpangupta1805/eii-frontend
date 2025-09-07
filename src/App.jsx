@@ -7,6 +7,8 @@ import Dashboard from './pages/Dashboard';
 import UploadContent from './pages/UploadContent';
 import Learning from './pages/Learning';
 import Quiz from './pages/Quiz';
+import QuizById from './pages/QuizById';
+import QuizHistory from './pages/QuizHistory';
 import CustumQuiz from './pages/CustumQuiz';
 import Summary from './pages/Summary';
 import PastQuizzes from './pages/PastQuizzes';
@@ -90,6 +92,16 @@ function App() {
                 <Route path="/quiz/:contentId" element={
                   <ProtectedRoute>
                     <Quiz />
+                  </ProtectedRoute>
+                } />
+                <Route path="/quiz/take/:quizId" element={
+                  <ProtectedRoute>
+                    <QuizById />
+                  </ProtectedRoute>
+                } />
+                <Route path="/quiz/history/:quizId" element={
+                  <ProtectedRoute>
+                    <QuizHistory />
                   </ProtectedRoute>
                 } />
                 <Route path="/summary/:contentId" element={
