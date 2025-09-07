@@ -12,6 +12,7 @@ import {
   ChartBarIcon
 } from '@heroicons/react/24/outline';
 import { quizAPI } from '../utils/api';
+import Chatbot from '../components/Chatbot';
 
 const PastQuizzes = () => {
   const [quizzes, setQuizzes] = useState([]);
@@ -298,6 +299,12 @@ const PastQuizzes = () => {
           )}
         </>
       )}
+      
+      {/* General Chatbot for past quizzes */}
+      <Chatbot 
+        context="general"
+        isVisible={true}
+      />
     </div>
   );
 };

@@ -14,6 +14,7 @@ import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
 import { useLearning } from '../contexts/LearningContext';
 import { useTranslation } from 'react-i18next';
 import { useContentTranslation } from '../hooks/useContentTranslation';
+import Chatbot from '../components/Chatbot';
 
 const Summary = () => {
   const { contentId } = useParams();
@@ -348,6 +349,13 @@ const Summary = () => {
           </motion.div>
         </div>
       </div>
+      
+      {/* Chatbot for content context */}
+      <Chatbot 
+        contentId={contentId}
+        context="content"
+        isVisible={true}
+      />
     </div>
   );
 };

@@ -13,6 +13,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { quizAPI } from '../utils/api';
 import toast from 'react-hot-toast';
+import Chatbot from '../components/Chatbot';
 
 const QuizHistory = () => {
   const { quizId } = useParams();
@@ -359,6 +360,13 @@ const QuizHistory = () => {
           </div>
         </div>
       )}
+      
+      {/* Chatbot for quiz context */}
+      <Chatbot 
+        quizId={quizId}
+        context="quiz"
+        isVisible={true}
+      />
     </div>
   );
 };

@@ -16,6 +16,7 @@ import { useAuth, useUser } from '@clerk/clerk-react';
 import { useTranslation } from 'react-i18next';
 import { useContentTranslation } from '../hooks/useContentTranslation';
 import TranslatedText from '../components/TranslatedText';
+import Chatbot from '../components/Chatbot';
 
 const Dashboard = () => {
   const { contents } = useLearning();
@@ -305,6 +306,12 @@ const Dashboard = () => {
 
         </div>
       </div>
+      
+      {/* General Chatbot for dashboard */}
+      <Chatbot 
+        context="general"
+        isVisible={true}
+      />
     </div>
   );
 };

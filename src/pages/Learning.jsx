@@ -15,6 +15,7 @@ import Confetti from 'react-confetti';
 import { useTranslation } from 'react-i18next';
 import { useContentTranslation } from '../hooks/useContentTranslation';
 import TranslatedText from '../components/TranslatedText';
+import Chatbot from '../components/Chatbot';
 
 const Learning = () => {
   const { contentId } = useParams();
@@ -388,6 +389,13 @@ const Learning = () => {
           </div>
         </div>
       </motion.div>
+      
+      {/* Chatbot for content context */}
+      <Chatbot 
+        contentId={contentId}
+        context="content"
+        isVisible={true}
+      />
     </div>
   );
 };

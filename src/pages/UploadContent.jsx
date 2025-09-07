@@ -14,6 +14,7 @@ import { useLearning } from '../contexts/LearningContext';
 import { useAuth } from '@clerk/clerk-react';
 import { extractTextFromPDF, validatePDFFile } from '../utils/pdfProcessor';
 import { useTranslation } from 'react-i18next';
+import Chatbot from '../components/Chatbot';
 
 const UploadContent = () => {
   const navigate = useNavigate();
@@ -407,6 +408,12 @@ const UploadContent = () => {
           </div>
         </div>
       </motion.div>
+      
+      {/* General Chatbot for upload page */}
+      <Chatbot 
+        context="general"
+        isVisible={true}
+      />
     </div>
   );
 };

@@ -259,6 +259,24 @@ export const analyticsAPI = {
   }
 };
 
+// Chatbot API
+export const chatbotAPI = {
+  // Chat with content context
+  chatWithContent: async (contentId, message) => {
+    return api.post(`/chatbot/chat/content/${contentId}`, { message });
+  },
+  
+  // Chat with quiz context
+  chatWithQuiz: async (quizId, message) => {
+    return api.post(`/chatbot/chat/quiz/${quizId}`, { message });
+  },
+  
+  // General chat
+  chatGeneral: async (message) => {
+    return api.post('/chatbot/chat/general', { message });
+  }
+};
+
 // Utility function to handle file upload progress
 export const uploadWithProgress = (url, data, onProgress) => {
   return api.post(url, data, {

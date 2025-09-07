@@ -13,6 +13,7 @@ import {
 import { quizAPI } from '../utils/api';
 import { useLearning } from '../contexts/LearningContext';
 import toast from 'react-hot-toast';
+import Chatbot from '../components/Chatbot';
 
 const CustumQuiz = () => {
   const navigate = useNavigate();
@@ -254,6 +255,12 @@ const CustumQuiz = () => {
           </div>
         </motion.div>
       </div>
+      
+      {/* General Chatbot for custom quiz creation */}
+      <Chatbot 
+        context="general"
+        isVisible={true}
+      />
     </div>
   );
 };
