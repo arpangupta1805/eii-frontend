@@ -12,6 +12,7 @@ import QuizHistory from './pages/QuizHistory';
 import CustumQuiz from './pages/CustumQuiz';
 import Summary from './pages/Summary';
 import PastQuizzes from './pages/PastQuizzes';
+import AllAnalytics from './pages/AllAnalytics';
 import { LearningProvider } from './contexts/LearningContext';
 import { DynamicTranslationProvider } from './contexts/DynamicTranslationContext';
 import './i18n/i18n'; // Initialize i18n
@@ -112,6 +113,16 @@ function App() {
                 <Route path="/quizzes/past" element={
                   <ProtectedRoute>
                     <PastQuizzes />
+                  </ProtectedRoute>
+                } />
+                <Route path="/analytics" element={
+                  <ProtectedRoute>
+                    <AllAnalytics />
+                  </ProtectedRoute>
+                } />
+                <Route path="/quiz-attempt/:attemptId" element={
+                  <ProtectedRoute>
+                    <QuizHistory />
                   </ProtectedRoute>
                 } />
               </Routes>

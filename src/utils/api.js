@@ -256,6 +256,16 @@ export const analyticsAPI = {
       params: { timeframe, format },
       responseType: format === 'csv' ? 'blob' : 'json'
     });
+  },
+
+  getAllQuizAnalyses: async (page = 1, limit = 20) => {
+    return api.get('/analytics/all-quiz-analyses', {
+      params: { page, limit }
+    });
+  },
+
+  debugQuizAttempts: async () => {
+    return api.get('/analytics/debug-quiz-attempts');
   }
 };
 

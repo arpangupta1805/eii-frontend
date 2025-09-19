@@ -16,6 +16,7 @@ import { useAuth, useUser } from '@clerk/clerk-react';
 import { useTranslation } from 'react-i18next';
 import { useContentTranslation } from '../hooks/useContentTranslation';
 import TranslatedText from '../components/TranslatedText';
+import StreakTracker from '../components/StreakTracker';
 import Chatbot from '../components/Chatbot';
 
 const Dashboard = () => {
@@ -298,10 +299,22 @@ const Dashboard = () => {
                 <ClockIcon className="h-5 w-5" />
                 <span>Past Quizzes</span>
               </Link>
-              <button className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-4 rounded-xl transition-colors">
+              <Link
+                to="/analytics"
+                className="w-full flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-4 rounded-xl transition-colors"
+              >
                 View All Analytics
-              </button>
+              </Link>
             </div>
+          </motion.div>
+
+          {/* Streak Tracker */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <StreakTracker />
           </motion.div>
 
         </div>
