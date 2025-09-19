@@ -29,6 +29,15 @@ const learningReducer = (state, action) => {
             : content
         )
       };
+    case 'UPDATE_SECTION_COMPLETION':
+      return {
+        ...state,
+        contents: state.contents.map(content =>
+          content.id === action.payload.contentId
+            ? { ...content, completedSections: action.payload.completedSections }
+            : content
+        )
+      };
     case 'SET_CURRENT_QUIZ':
       return { ...state, currentQuiz: action.payload };
     case 'UPDATE_QUIZ_SCORE':
@@ -105,7 +114,19 @@ export const LearningProvider = ({ children }) => {
       const transformedContent = contentList.map(content => ({
         id: content.id,
         title: content.title,
-        progress: content.progress || 0,
+        progress: (() => {
+          // Try to load from localStorage first, then fallback to content
+          const progressKey = `content_progress_${content.id}`;
+          const storedProgress = localStorage.getItem(progressKey);
+          if (storedProgress) {
+            try {
+              return parseInt(storedProgress);
+            } catch (e) {
+              console.error('Failed to parse stored progress:', e);
+            }
+          }
+          return content.progress || 0;
+        })(),
         uploadedAt: content.createdAt,
         summary: content.aiSummary?.summary || (content.processingStatus === 'completed' ? 'No summary available' : 'Processing...'),
         difficulty: content.aiSummary?.difficulty || 'medium',
@@ -123,7 +144,20 @@ export const LearningProvider = ({ children }) => {
           bestScore: 0,
           isPassed: false,
           attempts: []
-        }
+        },
+        completedSections: (() => {
+          // Try to load from localStorage first, then fallback to content
+          const sectionsKey = `content_sections_${content.id}`;
+          const storedSections = localStorage.getItem(sectionsKey);
+          if (storedSections) {
+            try {
+              return JSON.parse(storedSections);
+            } catch (e) {
+              console.error('Failed to parse stored sections:', e);
+            }
+          }
+          return content.completedSections || [];
+        })()
       }));
 
       dispatch({ type: 'SET_CONTENTS', payload: transformedContent });
@@ -189,13 +223,33 @@ export const LearningProvider = ({ children }) => {
     }
   };
 
-  const updateProgress = async (contentId, progress) => {
+  const updateProgress = (contentId, progress) => {
     try {
-      await contentAPI.updateProgress(contentId, progress);
+      // Save progress to localStorage
+      const progressKey = `content_progress_${contentId}`;
+      localStorage.setItem(progressKey, progress.toString());
+      
+      // Update context state
       dispatch({ type: 'UPDATE_PROGRESS', payload: { contentId, progress } });
+      
+      console.log(`Progress saved to localStorage: ${progressKey} = ${progress}%`);
     } catch (error) {
       console.error('Failed to update progress:', error);
-      toast.error('Failed to update progress');
+    }
+  };
+
+  const updateSectionCompletion = (contentId, completedSections) => {
+    try {
+      // Save completed sections to localStorage
+      const sectionsKey = `content_sections_${contentId}`;
+      localStorage.setItem(sectionsKey, JSON.stringify(completedSections));
+      
+      // Update context state
+      dispatch({ type: 'UPDATE_SECTION_COMPLETION', payload: { contentId, completedSections } });
+      
+      console.log(`Sections saved to localStorage: ${sectionsKey} =`, completedSections);
+    } catch (error) {
+      console.error('Failed to update section completion:', error);
     }
   };
 
@@ -291,6 +345,7 @@ export const LearningProvider = ({ children }) => {
     addContent,
     addVirtualContent,
     updateProgress,
+    updateSectionCompletion,
     deleteContent,
     generateQuiz,
     setCurrentQuiz,

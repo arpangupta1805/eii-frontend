@@ -558,6 +558,15 @@ const Quiz = () => {
               </div>
               
               <div className="flex items-center space-x-6">
+                {/* Quit Quiz Button */}
+                <button
+                  onClick={() => navigate(`/learning/${contentId}`)}
+                  className="flex items-center space-x-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg font-medium transition-colors"
+                >
+                  <ArrowLeftIcon className="w-5 h-5" />
+                  <span>Quit Quiz</span>
+                </button>
+                
                 {/* Timer */}
                 <div className="flex items-center text-white">
                   <ClockIcon className="w-5 h-5 mr-2" />

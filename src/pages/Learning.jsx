@@ -20,7 +20,7 @@ import Chatbot from '../components/Chatbot';
 const Learning = () => {
   const { contentId } = useParams();
   const navigate = useNavigate();
-  const { contents, updateProgress } = useLearning();
+  const { contents, updateProgress, updateSectionCompletion } = useLearning();
   const { t } = useTranslation();
   const { translateContent } = useContentTranslation();
   const [content, setContent] = useState(null);
@@ -28,6 +28,7 @@ const Learning = () => {
   const [readingProgress, setReadingProgress] = useState(0);
   const [showQuizButton, setShowQuizButton] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [completedSections, setCompletedSections] = useState(new Set());
 
   // Mock detailed summary content
   const summaryContent = {
@@ -79,34 +80,39 @@ const Learning = () => {
   };
 
   useEffect(() => {
-    const foundContent = contents.find(c => c.id === contentId);
+    const foundContent = contents.find(c => c.id === contentId || c.id === parseInt(contentId) || c.id.toString() === contentId);
+    
     if (foundContent) {
       setContent(foundContent);
-      console.log('=== CONTENT LOADED IN LEARNING PAGE ===');
-      console.log('Content:', foundContent);
-      console.log('AI Summary:', foundContent.aiSummary);
-      console.log('======================================');
+      // Initialize completed sections from context
+      const completedSectionsSet = new Set(foundContent.completedSections || []);
+      setCompletedSections(completedSectionsSet);
     }
   }, [contentId, contents]);
 
+  // Update reading progress based on completed sections
   useEffect(() => {
-    let interval;
-    if (isReading) {
-      interval = setInterval(() => {
-        setReadingProgress(prev => {
-          const newProgress = Math.min(prev + 1, 100);
-          if (newProgress === 100) {
-            setIsReading(false);
-            setShowQuizButton(true);
-            setShowConfetti(true);
-            setTimeout(() => setShowConfetti(false), 5000);
-          }
-          return newProgress;
-        });
-      }, 100);
+    const summary = content ? getContentSummary() : { sections: [] };
+    const totalSections = summary.sections.length;
+    const completedCount = completedSections.size;
+    const newProgress = totalSections > 0 ? Math.round((completedCount / totalSections) * 100) : 0;
+    
+    setReadingProgress(newProgress);
+    
+    // Update content progress in context based on section completion
+    if (content) {
+      updateProgress(contentId, newProgress);
     }
-    return () => clearInterval(interval);
-  }, [isReading]);
+    
+    if (newProgress === 100 && totalSections > 0) {
+      setShowQuizButton(true);
+      setShowConfetti(true);
+      setTimeout(() => setShowConfetti(false), 5000);
+      // Update content progress to 100% when all sections are completed
+      updateProgress(contentId, 100);
+    }
+  }, [completedSections, content, contentId, updateProgress]);
+
 
   const handleStartReading = () => {
     setIsReading(true);
@@ -116,6 +122,24 @@ const Learning = () => {
   const handlePauseReading = () => {
     setIsReading(false);
   };
+
+  const handleSectionToggle = (sectionIndex) => {
+    setCompletedSections(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(sectionIndex)) {
+        newSet.delete(sectionIndex);
+      } else {
+        newSet.add(sectionIndex);
+      }
+      
+      // Update context with new completed sections
+      const completedSectionsArray = Array.from(newSet);
+      updateSectionCompletion(contentId, completedSectionsArray);
+      
+      return newSet;
+    });
+  };
+
 
   const handleTakeQuiz = () => {
     updateProgress(contentId, Math.max(content.progress, 50));
@@ -128,6 +152,7 @@ const Learning = () => {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading content...</p>
+          <p className="mt-2 text-sm text-gray-500">Content ID: {contentId}</p>
         </div>
       </div>
     );
@@ -180,10 +205,6 @@ const Learning = () => {
         </h1>
         <div className="flex items-center justify-center space-x-6 text-gray-600">
           <div className="flex items-center">
-            <ClockIcon className="h-5 w-5 mr-2" />
-            <span>{content.estimatedTime}</span>
-          </div>
-          <div className="flex items-center">
             <BookOpenIcon className="h-5 w-5 mr-2" />
             <span>{summary.sections.length} {t('learning.sections')}</span>
           </div>
@@ -198,35 +219,12 @@ const Learning = () => {
       >
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-gray-900">{t('learning.reading_progress')}</h2>
-          <div className="flex items-center space-x-4">
-            {!showQuizButton ? (
-              <button
-                onClick={isReading ? handlePauseReading : handleStartReading}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-colors ${
-                  isReading
-                    ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                    : 'bg-green-100 text-green-700 hover:bg-green-200'
-                }`}
-              >
-                {isReading ? (
-                  <>
-                    <PauseIcon className="h-5 w-5" />
-                    <span>{t('learning.pause_reading')}</span>
-                  </>
-                ) : (
-                  <>
-                    <PlayIcon className="h-5 w-5" />
-                    <span>{t('learning.start_reading')}</span>
-                  </>
-                )}
-              </button>
-            ) : (
-              <div className="flex items-center space-x-2 text-green-600">
-                <CheckCircleIcon className="h-6 w-6" />
-                <span className="font-semibold">{t('learning.reading_complete')}</span>
-              </div>
-            )}
-          </div>
+          {showQuizButton && (
+            <div className="flex items-center space-x-2 text-green-600">
+              <CheckCircleIcon className="h-6 w-6" />
+              <span className="font-semibold">{t('learning.reading_complete')}</span>
+            </div>
+          )}
         </div>
         
         <div className="w-full bg-gray-200 rounded-full h-3 mb-2">
@@ -248,14 +246,42 @@ const Learning = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
-            className="learning-card p-8"
+            className={`learning-card p-8 transition-all duration-300 ${
+              completedSections.has(index) ? 'ring-2 ring-green-200 bg-green-50' : ''
+            }`}
           >
-            <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-              <span className="text-3xl mr-3">
-                {index === 0 ? '🎯' : index === 1 ? '📈' : '🚀'}
-              </span>
-              {section.title}
-            </h2>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+                <span className="text-3xl mr-3">
+                  {index === 0 ? '🎯' : index === 1 ? '📈' : '🚀'}
+                </span>
+                {section.title}
+              </h2>
+              <div className="flex items-center space-x-3">
+                <span className={`text-sm font-medium ${
+                  completedSections.has(index) ? 'text-green-600' : 'text-gray-500'
+                }`}>
+                  {completedSections.has(index) ? 'Completed' : 'In Progress'}
+                </span>
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={completedSections.has(index)}
+                    onChange={() => handleSectionToggle(index)}
+                    className="sr-only"
+                  />
+                  <div className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-all duration-200 ${
+                    completedSections.has(index)
+                      ? 'bg-green-500 border-green-500'
+                      : 'border-gray-300 hover:border-green-400'
+                  }`}>
+                    {completedSections.has(index) && (
+                      <CheckCircleIcon className="h-4 w-4 text-white" />
+                    )}
+                  </div>
+                </label>
+              </div>
+            </div>
 
             <div className="prose prose-lg max-w-none mb-8">
               <p className="text-gray-700 leading-relaxed text-lg">

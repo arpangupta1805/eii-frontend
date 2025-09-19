@@ -165,7 +165,17 @@ const Dashboard = () => {
                       <div className="flex items-start justify-between">
                         <div>
                           <h3 className="text-xl font-semibold text-gray-900 mb-2 group-hover:text-primary-600 transition-colors">
-                            {getStatusIcon(content.progress)} <TranslatedText text={content.title} cacheKey={`title_${content.id}`} />
+                            {getStatusIcon(content.progress)} 
+                            {content.progress < 100 ? (
+                              <Link 
+                                to={`/learning/${content.id}`}
+                                className="hover:text-primary-600 transition-colors"
+                              >
+                                <TranslatedText text={content.title} cacheKey={`title_${content.id}`} />
+                              </Link>
+                            ) : (
+                              <TranslatedText text={content.title} cacheKey={`title_${content.id}`} />
+                            )}
                           </h3>
                           <p className="text-gray-600 mb-3 line-clamp-2">
                             <TranslatedText text={content.summary} cacheKey={`summary_${content.id}`} />
@@ -174,53 +184,22 @@ const Dashboard = () => {
                             <span className={`px-3 py-1 rounded-full font-medium ${getDifficultyColor(content.difficulty)}`}>
                               {translateDifficulty(content.difficulty)}
                             </span>
-                            <span className="flex items-center text-gray-500">
-                              <ClockIcon className="h-4 w-4 mr-1" />
-                              {content.estimatedTime}
-                            </span>
                             <span className="text-gray-500">
                               Uploaded {new Date(content.uploadedAt).toLocaleDateString()}
                             </span>
                           </div>
+                          
                         </div>
 
                         <div className="flex items-center space-x-4">
-                          <div className="w-16 h-16">
-                            <CircularProgressbar
-                              value={content.progress}
-                              text={`${content.progress}%`}
-                              styles={buildStyles({
-                                textSize: '20px',
-                                pathColor: content.progress === 100 ? '#22c55e' : 
-                                          content.progress > 50 ? '#3b82f6' : '#f59e0b',
-                                textColor: '#374151',
-                                trailColor: '#f3f4f6',
-                              })}
-                            />
-                          </div>
                           <div className="flex flex-col space-y-2">
-                            {content.progress < 100 ? (
-                              <Link
-                                to={`/learning/${content.id}`}
-                                className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors"
-                              >
-                                {content.progress === 0 ? t('dashboard.start_learning') : t('dashboard.continue_learning')}
-                              </Link>
-                            ) : (
+                            {content.progress === 100 && (
                               <div className="px-4 py-2 bg-green-100 text-green-800 rounded-lg font-medium text-center">
                                 {t('dashboard.content_status.completed')}! 🎉
                               </div>
                             )}
                             
                             <div className="flex space-x-2">
-                              {content.progress > 0 && (
-                                <Link
-                                  to={`/summary/${content.id}`}
-                                  className="px-3 py-2 border border-gray-300 hover:border-gray-400 text-gray-700 rounded-lg font-medium transition-colors text-center text-sm"
-                                >
-                                  {t('dashboard.view_summary')}
-                                </Link>
-                              )}
                               
                               {content.progress === 100 && (
                                 content.quizHistory?.hasQuiz ? (
