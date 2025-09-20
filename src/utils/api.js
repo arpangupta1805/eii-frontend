@@ -356,6 +356,10 @@ export const communityAPI = {
     return api.get('/community/my-communities');
   },
   
+  createCommunity: async (communityData) => {
+    return api.post('/community/create', communityData);
+  },
+  
   joinCommunity: async (communityId) => {
     return api.post(`/community/${communityId}/join`);
   },

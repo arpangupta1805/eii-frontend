@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   UserGroupIcon, 
   PlusIcon,
@@ -7,7 +7,11 @@ import {
   DocumentIcon,
   AcademicCapIcon,
   ArrowRightIcon,
-  FireIcon
+  FireIcon,
+  XMarkIcon,
+  PhotoIcon,
+  GlobeAltIcon,
+  LockClosedIcon
 } from '@heroicons/react/24/outline';
 import { communityAPI } from '../utils/api';
 import toast from 'react-hot-toast';
@@ -18,6 +22,15 @@ const Community = () => {
   const [myCommunities, setMyCommunities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [joiningCommunity, setJoiningCommunity] = useState(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [createForm, setCreateForm] = useState({
+    name: '',
+    description: '',
+    category: 'Study Group',
+    isPrivate: false,
+    image: null
+  });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -67,6 +80,42 @@ const Community = () => {
       toast.error(error.response?.data?.message || 'Failed to join community');
     } finally {
       setJoiningCommunity(null);
+    }
+  };
+
+  const handleCreateCommunity = async (e) => {
+    e.preventDefault();
+    if (!createForm.name.trim()) {
+      toast.error('Please provide a community name');
+      return;
+    }
+    if (!createForm.description.trim()) {
+      toast.error('Please provide a community description');
+      return;
+    }
+
+    setCreating(true);
+    try {
+      const response = await communityAPI.createCommunity(createForm);
+      if (response.success) {
+        toast.success('Community created successfully!');
+        setShowCreateModal(false);
+        setCreateForm({
+          name: '',
+          description: '',
+          category: 'Study Group',
+          isPrivate: false,
+          image: null
+        });
+        // Refresh communities
+        fetchCommunities();
+        fetchMyCommunities();
+      }
+    } catch (error) {
+      console.error('Error creating community:', error);
+      toast.error(error.message || 'Failed to create community');
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -200,14 +249,25 @@ const Community = () => {
           className="mb-12"
         >
           <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
-            <div className="flex items-center mb-8">
-              <div className="bg-gradient-to-r from-blue-400 to-indigo-500 rounded-xl p-3 mr-4">
-                <PlusIcon className="h-6 w-6 text-white" />
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center">
+                <div className="bg-gradient-to-r from-blue-400 to-indigo-500 rounded-xl p-3 mr-4">
+                  <PlusIcon className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Discover Communities</h2>
+                  <p className="text-gray-600 mt-1">Join new study groups and expand your network</p>
+                </div>
               </div>
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">Discover Communities</h2>
-                <p className="text-gray-600 mt-1">Join new study groups and expand your network</p>
-              </div>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setShowCreateModal(true)}
+                className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 flex items-center space-x-2"
+              >
+                <PlusIcon className="h-5 w-5" />
+                <span>Create Community</span>
+              </motion.button>
             </div>
             
             {availableCommunities.length === 0 ? (
@@ -242,10 +302,15 @@ const Community = () => {
                       <div className="absolute inset-0 flex items-center justify-center">
                         <span className="text-5xl filter drop-shadow-lg">{getCommunityIcon(community.name)}</span>
                       </div>
-                      <div className="absolute top-4 right-4">
+                      <div className="absolute top-4 right-4 flex flex-col space-y-2">
                         <div className="bg-white bg-opacity-20 backdrop-blur-sm px-3 py-1 rounded-full">
                           <span className="text-white text-xs font-semibold">{community.category}</span>
                         </div>
+                        {community.isCreatedByUser && (
+                          <div className="bg-gradient-to-r from-yellow-400 to-orange-500 px-3 py-1 rounded-full">
+                            <span className="text-white text-xs font-bold">👑 Created by You</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                     
@@ -271,20 +336,30 @@ const Community = () => {
                         </div>
                       </div>
 
-                      <button
-                        onClick={() => handleJoinCommunity(community._id)}
-                        disabled={joiningCommunity === community._id}
-                        className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 px-4 rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                      >
-                        {joiningCommunity === community._id ? (
-                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                        ) : (
-                          <>
-                            <PlusIcon className="h-5 w-5 mr-2" />
-                            Join Community
-                          </>
-                        )}
-                      </button>
+                      {community.isCreatedByUser ? (
+                        <Link
+                          to={`/community/${community._id}`}
+                          className="w-full bg-gradient-to-r from-yellow-500 to-orange-600 text-white py-3 px-4 rounded-xl hover:from-yellow-600 hover:to-orange-700 transition-all duration-300 flex items-center justify-center font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                        >
+                          <ArrowRightIcon className="h-5 w-5 mr-2" />
+                          Manage Community
+                        </Link>
+                      ) : (
+                        <button
+                          onClick={() => handleJoinCommunity(community._id)}
+                          disabled={joiningCommunity === community._id}
+                          className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 px-4 rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                        >
+                          {joiningCommunity === community._id ? (
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                          ) : (
+                            <>
+                              <PlusIcon className="h-5 w-5 mr-2" />
+                              Join Community
+                            </>
+                          )}
+                        </button>
+                      )}
                     </div>
                   </motion.div>
                 ))}
@@ -344,6 +419,170 @@ const Community = () => {
           </div>
         </motion.div>
       </div>
+
+      {/* Create Community Modal */}
+      <AnimatePresence>
+        {showCreateModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+            >
+              {/* Modal Header */}
+              <div className="sticky top-0 bg-white border-b border-gray-200 px-8 py-6 rounded-t-2xl">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl p-3">
+                      <UserGroupIcon className="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold text-gray-900">Create Community</h2>
+                      <p className="text-gray-600">Start a new study group and invite others to join</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowCreateModal(false)}
+                    className="text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-lg"
+                  >
+                    <XMarkIcon className="h-6 w-6" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Modal Content */}
+              <form onSubmit={handleCreateCommunity} className="p-8 space-y-6">
+                {/* Community Name */}
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-3">
+                    Community Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={createForm.name}
+                    onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-green-200 focus:border-green-500 bg-white shadow-sm text-lg"
+                    placeholder="e.g., JEE Physics Masters, NEET Biology Squad"
+                    maxLength={50}
+                  />
+                  <p className="text-sm text-gray-500 mt-2">{50 - createForm.name.length} characters remaining</p>
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-3">
+                    Description *
+                  </label>
+                  <textarea
+                    required
+                    value={createForm.description}
+                    onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
+                    rows={4}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-green-200 focus:border-green-500 bg-white shadow-sm resize-none"
+                    placeholder="Describe what your community is about, what subjects you'll focus on, and what kind of members you're looking for..."
+                    maxLength={500}
+                  />
+                  <p className="text-sm text-gray-500 mt-2">{500 - createForm.description.length} characters remaining</p>
+                </div>
+
+                {/* Category */}
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-3">
+                    Category
+                  </label>
+                  <select
+                    value={createForm.category}
+                    onChange={(e) => setCreateForm({ ...createForm, category: e.target.value })}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-green-200 focus:border-green-500 bg-white shadow-sm"
+                  >
+                    <option value="Study Group">📚 Study Group</option>
+                    <option value="JEE Preparation">🎯 JEE Preparation</option>
+                    <option value="NEET Preparation">🩺 NEET Preparation</option>
+                    <option value="Subject Specific">📖 Subject Specific</option>
+                    <option value="Doubt Solving">❓ Doubt Solving</option>
+                    <option value="Mock Tests">📝 Mock Tests</option>
+                    <option value="Motivation">💪 Motivation & Support</option>
+                    <option value="Other">🔗 Other</option>
+                  </select>
+                </div>
+
+                {/* Privacy Settings */}
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-3">
+                    Privacy Settings
+                  </label>
+                  <div className="space-y-3">
+                    <label className="flex items-center space-x-3 cursor-pointer p-3 rounded-xl border-2 border-gray-200 hover:border-green-300 transition-colors">
+                      <input
+                        type="radio"
+                        name="privacy"
+                        checked={!createForm.isPrivate}
+                        onChange={() => setCreateForm({ ...createForm, isPrivate: false })}
+                        className="text-green-600 focus:ring-green-500"
+                      />
+                      <GlobeAltIcon className="h-5 w-5 text-green-600" />
+                      <div>
+                        <div className="font-semibold text-gray-900">Public Community</div>
+                        <div className="text-sm text-gray-600">Anyone can discover and join this community</div>
+                      </div>
+                    </label>
+                    <label className="flex items-center space-x-3 cursor-pointer p-3 rounded-xl border-2 border-gray-200 hover:border-green-300 transition-colors">
+                      <input
+                        type="radio"
+                        name="privacy"
+                        checked={createForm.isPrivate}
+                        onChange={() => setCreateForm({ ...createForm, isPrivate: true })}
+                        className="text-green-600 focus:ring-green-500"
+                      />
+                      <LockClosedIcon className="h-5 w-5 text-gray-600" />
+                      <div>
+                        <div className="font-semibold text-gray-900">Private Community</div>
+                        <div className="text-sm text-gray-600">Invite-only community (coming soon)</div>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex space-x-4 pt-6 border-t border-gray-200">
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateModal(false)}
+                    className="flex-1 px-6 py-3 border-2 border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 transition-all font-semibold"
+                    disabled={creating}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={creating}
+                    className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-3 rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                  >
+                    {creating ? (
+                      <div className="flex items-center justify-center space-x-2">
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                        <span>Creating...</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center space-x-2">
+                        <PlusIcon className="h-5 w-5" />
+                        <span>Create Community</span>
+                      </div>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
