@@ -53,6 +53,12 @@ const Navbar = () => {
                 >
                   {t('nav.custom_quiz')}
                 </Link>
+                <Link 
+                  to="/community" 
+                  className="text-gray-600 hover:text-blue-600 px-4 py-3 rounded-md text-base font-medium transition-colors"
+                >
+                  Community
+                </Link>
               </SignedIn>
             </div>
           </div>
@@ -120,6 +126,13 @@ const Navbar = () => {
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 {t('nav.custom_quiz')}
+              </Link>
+              <Link 
+                to="/community" 
+                className="text-gray-600 hover:text-blue-600 block px-4 py-3 rounded-md text-lg font-medium"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Community
               </Link>
             </div>
           </div>

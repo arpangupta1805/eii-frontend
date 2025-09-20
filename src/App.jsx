@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ClerkProvider, SignedIn, SignedOut, RedirectToSignIn } from '@clerk/clerk-react';
 import { Toaster } from 'react-hot-toast';
 import Navbar from './components/layout/Navbar';
+import UsernameGate from './components/UsernameGate';
 import Dashboard from './pages/Dashboard';
 import UploadContent from './pages/UploadContent';
 import Learning from './pages/Learning';
@@ -13,6 +14,10 @@ import CustumQuiz from './pages/CustumQuiz';
 import Summary from './pages/Summary';
 import PastQuizzes from './pages/PastQuizzes';
 import AllAnalytics from './pages/AllAnalytics';
+import Community from './pages/Community';
+import CommunityDetail from './pages/CommunityDetail';
+import CommunityQuizLeaderboard from './pages/CommunityQuizLeaderboard';
+import CommunityQuizDiscussion from './pages/CommunityQuizDiscussion';
 import { LearningProvider } from './contexts/LearningContext';
 import { DynamicTranslationProvider } from './contexts/DynamicTranslationContext';
 import './i18n/i18n'; // Initialize i18n
@@ -25,7 +30,9 @@ const ProtectedRoute = ({ children }) => {
   return (
     <>
       <SignedIn>
-        {children}
+        <UsernameGate>
+          {children}
+        </UsernameGate>
       </SignedIn>
       <SignedOut>
         <RedirectToSignIn />
@@ -62,7 +69,7 @@ function App() {
           <Router>
             <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
               <Navbar />
-              <main className="pt-16">
+              <main>
               <Routes>
                 {/* Protected Routes */}
                 <Route path="/" element={
@@ -123,6 +130,31 @@ function App() {
                 <Route path="/quiz-attempt/:attemptId" element={
                   <ProtectedRoute>
                     <QuizHistory />
+                  </ProtectedRoute>
+                } />
+                <Route path="/community" element={
+                  <ProtectedRoute>
+                    <Community />
+                  </ProtectedRoute>
+                } />
+                <Route path="/community/:communityId" element={
+                  <ProtectedRoute>
+                    <CommunityDetail />
+                  </ProtectedRoute>
+                } />
+                <Route path="/community/:communityId/chat" element={
+                  <ProtectedRoute>
+                    <CommunityDetail />
+                  </ProtectedRoute>
+                } />
+                <Route path="/community/:communityId/quiz/:quizId/leaderboard" element={
+                  <ProtectedRoute>
+                    <CommunityQuizLeaderboard />
+                  </ProtectedRoute>
+                } />
+                <Route path="/community/:communityId/quiz/:quizId/discussion" element={
+                  <ProtectedRoute>
+                    <CommunityQuizDiscussion />
                   </ProtectedRoute>
                 } />
               </Routes>

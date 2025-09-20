@@ -11,7 +11,7 @@ import {
   DocumentTextIcon,
   ChartBarIcon
 } from '@heroicons/react/24/outline';
-import { quizAPI } from '../utils/api';
+import { quizAPI, communityAPI } from '../utils/api';
 import Chatbot from '../components/Chatbot';
 
 const PastQuizzes = () => {
@@ -25,13 +25,70 @@ const PastQuizzes = () => {
   const fetchQuizzes = async (page = 1, status = 'all') => {
     try {
       setLoading(true);
-      const response = await quizAPI.getAllQuizzes(page, 10, status);
       
-      if (response.success) {
-        setQuizzes(response.data.quizzes);
-        setPagination(response.data.pagination);
-        setError(null);
+      // Fetch both regular quizzes and community quiz attempts
+      const [regularQuizzes, communityQuizzes] = await Promise.all([
+        quizAPI.getAllQuizzes(page, 10, status),
+        communityAPI.getUserCommunityQuizAttempts(page, 10)
+      ]);
+      
+      let allQuizzes = [];
+      let totalCount = 0;
+      
+      // Process regular quizzes
+      if (regularQuizzes.success && regularQuizzes.data.quizzes) {
+        const processedRegularQuizzes = regularQuizzes.data.quizzes.map(quiz => ({
+          ...quiz,
+          isCommunityQuiz: false,
+          hasAttempts: quiz.attempts && quiz.attempts.length > 0,
+          bestScore: quiz.attempts?.length > 0 ? Math.max(...quiz.attempts.map(a => a.score || 0)) : null,
+          latestScore: quiz.attempts?.length > 0 ? quiz.attempts[quiz.attempts.length - 1]?.score || 0 : null,
+          latestAttemptDate: quiz.attempts?.length > 0 ? quiz.attempts[quiz.attempts.length - 1]?.completedAt : null,
+          totalAttempts: quiz.attempts?.length || 0,
+          isPassed: quiz.attempts?.some(attempt => attempt.score >= 60) || false,
+          questionCount: quiz.questions?.length || 0,
+          category: quiz.category || 'general',
+          difficulty: quiz.difficulty || 'medium'
+        }));
+        allQuizzes = [...allQuizzes, ...processedRegularQuizzes];
+        totalCount += regularQuizzes.data.pagination?.total || 0;
       }
+      
+      // Process community quiz attempts
+      if (communityQuizzes.success && communityQuizzes.data.attempts) {
+        const processedCommunityQuizzes = communityQuizzes.data.attempts.map(attempt => ({
+          _id: attempt.quizId,
+          title: attempt.quizTitle || 'Community Quiz',
+          isCommunityQuiz: true,
+          hasAttempts: true,
+          bestScore: attempt.score || 0,
+          latestScore: attempt.score || 0,
+          latestAttemptDate: attempt.completedAt,
+          totalAttempts: 1, // Each community quiz attempt is a separate record
+          isPassed: (attempt.score || 0) >= 60,
+          questionCount: attempt.questionsCount || 0,
+          category: 'community',
+          difficulty: 'medium',
+          contentId: null,
+          isCustom: false,
+          communityId: attempt.communityId,
+          communityName: attempt.communityName
+        }));
+        allQuizzes = [...allQuizzes, ...processedCommunityQuizzes];
+        totalCount += communityQuizzes.data.pagination?.total || 0;
+      }
+      
+      // Sort by completion date (most recent first)
+      allQuizzes.sort((a, b) => new Date(b.latestAttemptDate || b.createdAt) - new Date(a.latestAttemptDate || a.createdAt));
+      
+      setQuizzes(allQuizzes);
+      setPagination({
+        page: page,
+        limit: 10,
+        total: totalCount,
+        pages: Math.ceil(totalCount / 10)
+      });
+      setError(null);
     } catch (err) {
       console.error('Error fetching quizzes:', err);
       setError('Failed to load past quizzes');
@@ -187,7 +244,12 @@ const PastQuizzes = () => {
                       {quiz.title}
                     </h3>
                     <p className="text-sm text-gray-600 mb-2">
-                      {quiz.isCustom ? 'Custom Quiz' : quiz.contentId?.title || 'Unknown Content'}
+                      {quiz.isCommunityQuiz 
+                        ? `Community Quiz${quiz.communityName ? ` • ${quiz.communityName}` : ''}` 
+                        : quiz.isCustom 
+                        ? 'Custom Quiz' 
+                        : quiz.contentId?.title || 'Unknown Content'
+                      }
                     </p>
                   </div>
                   {quiz.isPassed ? (
@@ -248,17 +310,23 @@ const PastQuizzes = () => {
 
                 <div className="flex space-x-2">
                   <Link
-                    to={`/quiz/take/${quiz._id}`}
+                    to={quiz.isCommunityQuiz 
+                      ? `/community/${quiz.communityId}/quiz/${quiz._id}` 
+                      : `/quiz/take/${quiz._id}`
+                    }
                     className="flex-1 btn-primary text-center text-sm py-2"
                   >
                     {quiz.hasAttempts ? 'Retake Quiz' : 'Take Quiz'}
                   </Link>
                   {quiz.hasAttempts && (
                     <Link
-                      to={`/quiz/history/${quiz._id}`}
+                      to={quiz.isCommunityQuiz 
+                        ? `/community/${quiz.communityId}/quiz/${quiz._id}/results` 
+                        : `/quiz/history/${quiz._id}`
+                      }
                       className="flex-1 btn-secondary text-center text-sm py-2"
                     >
-                      View History
+                      {quiz.isCommunityQuiz ? 'View Results' : 'View History'}
                     </Link>
                   )}
                 </div>

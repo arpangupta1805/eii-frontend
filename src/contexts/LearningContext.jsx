@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useReducer, useEffect } from 'react';
 import { useAuth } from '@clerk/clerk-react';
-import { contentAPI, quizAPI } from '../utils/api';
+import api, { contentAPI, quizAPI, authAPI } from '../utils/api';
 import { setTokenGetter } from '../utils/api';
 import toast from 'react-hot-toast';
 
@@ -16,6 +16,10 @@ export const useLearning = () => {
 
 const learningReducer = (state, action) => {
   switch (action.type) {
+    case 'SET_USER':
+      return { ...state, user: action.payload };
+    case 'SET_REQUIRES_USERNAME':
+      return { ...state, requiresUsername: action.payload };
     case 'SET_CONTENTS':
       return { ...state, contents: action.payload };
     case 'ADD_CONTENT':
@@ -43,6 +47,8 @@ const learningReducer = (state, action) => {
 };
 
 const initialState = {
+  user: null,
+  requiresUsername: false,
   contents: [],
   currentQuiz: null,
   quizScore: null,
@@ -62,12 +68,44 @@ export const LearningProvider = ({ children }) => {
 
   const [state, dispatch] = useReducer(learningReducer, initialState);
 
-  // Load user content when authenticated
+  // Load user profile and content when authenticated
   useEffect(() => {
     if (isSignedIn) {
+      loadUserProfile();
       loadUserContent();
     }
   }, [isSignedIn]);
+
+  // Load user profile
+  const loadUserProfile = async () => {
+    try {
+      const response = await authAPI.getProfile();
+      
+      if (response.success) {
+        const user = response.data;
+        dispatch({ type: 'SET_USER', payload: user });
+        
+        // Check if user needs to set username
+        if (!user.username) {
+          dispatch({ type: 'SET_REQUIRES_USERNAME', payload: true });
+        } else {
+          dispatch({ type: 'SET_REQUIRES_USERNAME', payload: false });
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load user profile:', error);
+      // If it's a username requirement error, handle it
+      if (error.response?.data?.code === 'USERNAME_REQUIRED') {
+        dispatch({ type: 'SET_REQUIRES_USERNAME', payload: true });
+      }
+    }
+  };
+
+  // Function to update user after username is set
+  const updateUserProfile = (updatedUser) => {
+    dispatch({ type: 'SET_USER', payload: updatedUser });
+    dispatch({ type: 'SET_REQUIRES_USERNAME', payload: false });
+  };
 
   // Periodically refresh content that's being processed
   useEffect(() => {
@@ -297,7 +335,9 @@ export const LearningProvider = ({ children }) => {
     updateQuizScore,
     setPerformanceLevel,
     setLoading,
-    loadUserContent
+    loadUserContent,
+    loadUserProfile,
+    updateUserProfile
   };
 
   return (

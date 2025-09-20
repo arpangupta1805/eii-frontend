@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
 // Create axios instance with default config
 const api = axios.create({
@@ -52,7 +52,28 @@ api.interceptors.response.use(
       localStorage.removeItem('authToken');
       localStorage.removeItem('user');
       window.location.href = '/login';
+    } else if (error.response?.status === 429) {
+      // Handle rate limiting
+      console.error('Rate limit exceeded. Please wait before making more requests.');
+      const retryAfter = error.response?.headers['retry-after'];
+      if (retryAfter) {
+        console.log(`Rate limit will reset in ${retryAfter} seconds`);
+      }
+      
+      // Return a more user-friendly error
+      return Promise.reject({
+        message: 'Too many requests. Please wait a moment and try again.',
+        status: 429,
+        retryAfter: retryAfter ? parseInt(retryAfter) : 60
+      });
     }
+    
+    console.error('API Error:', {
+      status: error.response?.status,
+      message: error.response?.data?.message || error.message,
+      url: error.config?.url
+    });
+    
     return Promise.reject(error.response?.data || error.message);
   }
 );
@@ -69,6 +90,15 @@ export const authAPI = {
   
   deleteProfile: async () => {
     return api.delete('/auth/profile');
+  },
+
+  // Username management
+  checkUsername: async (username) => {
+    return api.get(`/auth/check-username/${username}`);
+  },
+
+  setUsername: async (username) => {
+    return api.post('/auth/set-username', { username });
   }
 };
 
@@ -264,6 +294,12 @@ export const analyticsAPI = {
     });
   },
 
+  getCommunityQuizAnalyses: async (page = 1, limit = 20) => {
+    return api.get('/analytics/community-quiz-analyses', {
+      params: { page, limit }
+    });
+  },
+
   debugQuizAttempts: async () => {
     return api.get('/analytics/debug-quiz-attempts');
   }
@@ -284,6 +320,176 @@ export const chatbotAPI = {
   // General chat
   chatGeneral: async (message) => {
     return api.post('/chatbot/chat/general', { message });
+  }
+};
+
+// Helper function for retrying requests with exponential backoff
+const retryRequest = async (requestFn, maxRetries = 2, baseDelay = 1000) => {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await requestFn();
+    } catch (error) {
+      // Only retry on rate limit errors
+      if (error.status === 429 && attempt < maxRetries) {
+        const delay = baseDelay * Math.pow(2, attempt);
+        console.log(`Rate limited. Retrying in ${delay}ms... (Attempt ${attempt + 1}/${maxRetries + 1})`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        continue;
+      }
+      throw error;
+    }
+  }
+};
+
+// Community API calls
+export const communityAPI = {
+  // Community management
+  getCommunities: async () => {
+    return api.get('/community');
+  },
+  
+  getAllCommunities: async () => {
+    return api.get('/community');
+  },
+  
+  getMyCommunities: async () => {
+    return api.get('/community/my-communities');
+  },
+  
+  joinCommunity: async (communityId) => {
+    return api.post(`/community/${communityId}/join`);
+  },
+  
+  leaveCommunity: async (communityId) => {
+    return api.post(`/community/${communityId}/leave`);
+  },
+  
+  getCommunityMembers: async (communityId, page = 1, limit = 20) => {
+    return api.get(`/community/${communityId}/members`, {
+      params: { page, limit }
+    });
+  },
+  
+  // Community content
+  getCommunityContent: async (communityId, page = 1, limit = 10, category = '', search = '') => {
+    return api.get(`/community-content/${communityId}`, {
+      params: { page, limit, category, search }
+    });
+  },
+  
+  uploadCommunityContent: async (communityId, formData, onProgress) => {
+    return api.post(`/community-content/${communityId}/upload`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      onUploadProgress: onProgress ? (progressEvent) => {
+        const percentCompleted = Math.round(
+          (progressEvent.loaded * 100) / progressEvent.total
+        );
+        onProgress(percentCompleted);
+      } : undefined,
+    });
+  },
+  
+    shareCommunityContent: async (communityId, contentId, description = '') => {
+    return api.post(`/community-content/${communityId}/share/${contentId}`, { description });
+  },
+  
+  generateCommunityContentSummary: async (communityId, contentId) => {
+    return api.post(`/community-content/${communityId}/${contentId}/generate-summary`);
+  },
+  
+  // Community quizzes
+  
+  getCommunityContentById: async (communityId, contentId) => {
+    return api.get(`/community-content/${communityId}/content/${contentId}`);
+  },
+  
+  deleteCommunityContent: async (communityId, contentId) => {
+    return api.delete(`/community-content/${communityId}/content/${contentId}`);
+  },
+  
+  // Community quizzes
+  getCommunityQuizzes: async (communityId, page = 1, limit = 10, type = 'public', difficulty = '', category = '') => {
+    return api.get(`/community-quiz/${communityId}`, {
+      params: { page, limit, type, difficulty, category }
+    });
+  },
+  
+  createQuizFromContent: async (communityId, contentId, config) => {
+    return api.post(`/community-quiz/${communityId}/create-from-content/${contentId}`, config);
+  },
+  
+  createCustomQuiz: async (communityId, config) => {
+    return api.post(`/community-quiz/${communityId}/create-custom`, config);
+  },
+  
+  joinPrivateQuiz: async (accessCode) => {
+    return api.post('/community-quiz/join-private', { accessCode });
+  },
+  
+  getCommunityQuizById: async (communityId, quizId) => {
+    return api.get(`/community-quiz/${communityId}/quiz/${quizId}`);
+  },
+  
+  getQuizLeaderboard: async (communityId, quizId) => {
+    return api.get(`/community-quiz/${communityId}/quiz/${quizId}/leaderboard`);
+  },
+  
+  getQuizDiscussion: async (communityId, quizId, page = 1, limit = 50) => {
+    return api.get(`/community-quiz/${communityId}/quiz/${quizId}/discussion`, {
+      params: { page, limit }
+    });
+  },
+  
+  sendQuizDiscussionMessage: async (communityId, quizId, content) => {
+    return api.post(`/community-quiz/${communityId}/quiz/${quizId}/discussion`, { content });
+  },
+
+  // Community quiz attempts
+  startCommunityQuizAttempt: async (communityId, quizId) => {
+    return api.post(`/community-quiz/${communityId}/quiz/${quizId}/attempt`);
+  },
+
+  submitCommunityQuizAttempt: async (communityId, quizId, attemptId, answers, timeSpent) => {
+    return api.post(`/community-quiz/${communityId}/quiz/${quizId}/attempt/${attemptId}/submit`, {
+      answers,
+      timeSpent
+    });
+  },
+
+  // Get user's community quiz attempts
+  getUserCommunityQuizAttempts: async (page = 1, limit = 10) => {
+    return api.get(`/community-quiz/user/attempts?page=${page}&limit=${limit}`);
+  },
+  
+  // Community chat
+  getCommunityMessages: async (communityId, page = 1, limit = 50, type = 'general') => {
+    return api.get(`/community-chat/${communityId}/messages`, {
+      params: { page, limit, type }
+    });
+  },
+  
+  sendCommunityMessage: async (communityId, content, type = 'general', parentMessageId = null) => {
+    return api.post(`/community-chat/${communityId}/messages`, {
+      content,
+      type,
+      parentMessageId
+    });
+  },
+  
+
+  
+  editMessage: async (communityId, messageId, content) => {
+    return api.put(`/community-chat/${communityId}/messages/${messageId}`, { content });
+  },
+  
+  deleteMessage: async (communityId, messageId) => {
+    return api.delete(`/community-chat/${communityId}/messages/${messageId}`);
+  },
+  
+  reactToMessage: async (communityId, messageId, emoji) => {
+    return api.post(`/community-chat/${communityId}/messages/${messageId}/react`, { emoji });
   }
 };
 

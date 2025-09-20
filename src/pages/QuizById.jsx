@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ClockIcon,
@@ -13,13 +13,19 @@ import {
   ArrowRightIcon
 } from '@heroicons/react/24/outline';
 import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
-import { quizAPI } from '../utils/api';
+import { quizAPI, communityAPI } from '../utils/api';
 import Confetti from 'react-confetti';
 import toast from 'react-hot-toast';
 
 const QuizById = () => {
   const { quizId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Check if this is a community quiz from navigation state
+  const communityQuizData = location.state;
+  const isCommunityQuiz = communityQuizData?.isCommunityQuiz;
+  const communityId = communityQuizData?.communityId;
   
   // Quiz states
   const [quiz, setQuiz] = useState(null);
@@ -37,6 +43,17 @@ const QuizById = () => {
 
   const questions = quiz?.questions || [];
 
+  // Helper function for navigation back
+  const navigateBack = () => {
+    if (isCommunityQuiz && communityId) {
+      navigate(`/community/${communityId}`);
+    } else if (communityQuizData?.returnPath) {
+      navigate(communityQuizData.returnPath);
+    } else {
+      navigate('/quizzes/past');
+    }
+  };
+
   // Load quiz by ID
   useEffect(() => {
     if (quizId) {
@@ -47,25 +64,56 @@ const QuizById = () => {
   const loadQuiz = async () => {
     try {
       setIsLoading(true);
-      console.log('Loading quiz with ID:', quizId);
+      console.log('Loading quiz with ID:', quizId, 'isCommunityQuiz:', isCommunityQuiz);
       
-      const response = await quizAPI.getQuizById(quizId);
-      console.log('Quiz response:', response);
+      let response;
       
-      if (response.success) {
-        setQuiz(response.data);
+      // If we have community quiz data from navigation state, use it
+      if (isCommunityQuiz && communityQuizData?.quiz) {
+        console.log('Using community quiz data from state:', communityQuizData.quiz);
+        setQuiz(communityQuizData.quiz);
         // Initialize timer
-        setTimer(response.data.settings?.timeLimit * 60 || 1800); // default 30 minutes
+        setTimer(communityQuizData.quiz.settings?.timeLimit * 60 || 1800); // default 30 minutes
+        setStartTime(Date.now());
+        setQuestionStartTime(Date.now());
+        setIsLoading(false);
+        return;
+      }
+      
+      // Otherwise fetch from API
+      if (isCommunityQuiz && communityId) {
+        response = await communityAPI.getCommunityQuizById(communityId, quizId);
+        if (response.success) {
+          setQuiz(response.data.quiz);
+        }
+      } else {
+        response = await quizAPI.getQuizById(quizId);
+        if (response.success) {
+          setQuiz(response.data);
+        }
+      }
+      
+      if (response?.success) {
+        // Initialize timer
+        setTimer((response.data.quiz || response.data).settings?.timeLimit * 60 || 1800); // default 30 minutes
         setStartTime(Date.now());
         setQuestionStartTime(Date.now());
         console.log('Quiz loaded successfully:', response.data);
       } else {
-        throw new Error(response.message || 'Failed to load quiz');
+        throw new Error(response?.message || 'Failed to load quiz');
       }
     } catch (error) {
       console.error('Error loading quiz:', error);
       toast.error('Failed to load quiz');
-      navigate('/quizzes/past');
+      if (isCommunityQuiz && communityId) {
+        navigate(`/community/${communityId}`);
+      } else {
+      if (isCommunityQuiz && communityId) {
+        navigate(`/community/${communityId}`);
+      } else {
+        navigate('/quizzes/past');
+      }
+      }
     } finally {
       setIsLoading(false);
     }
@@ -74,7 +122,14 @@ const QuizById = () => {
   // Start quiz attempt
   const startQuizAttempt = async () => {
     try {
-      const response = await quizAPI.startAttempt(quizId);
+      let response;
+      
+      if (isCommunityQuiz && communityId) {
+        response = await communityAPI.startCommunityQuizAttempt(communityId, quizId);
+      } else {
+        response = await quizAPI.startAttempt(quizId);
+      }
+      
       if (response.success) {
         setAttempt(response.data);
         toast.success('Quiz started!');
@@ -163,8 +218,7 @@ const QuizById = () => {
         console.log(`Question ${index}:`, question);
         return {
           questionId: question._id || `q_${index}`, // Fallback if _id doesn't exist
-          sectionTitle: question.sectionTitle,
-          userAnswer: selectedAnswers[index] || '',
+          selectedAnswer: selectedAnswers[index] || '',
           timeSpent: timeSpent[index] || 0
         };
       });
@@ -177,7 +231,21 @@ const QuizById = () => {
         throw new Error('No attempt ID found');
       }
 
-      const response = await quizAPI.submitAttempt(attemptId, answers);
+      const totalTimeSpent = Object.values(timeSpent).reduce((total, time) => total + time, 0);
+      let response;
+
+      if (isCommunityQuiz && communityId) {
+        response = await communityAPI.submitCommunityQuizAttempt(communityId, quizId, attemptId, answers, totalTimeSpent);
+      } else {
+        // For regular quizzes, maintain backward compatibility
+        const formattedAnswers = questions.map((question, index) => ({
+          questionId: question._id || `q_${index}`,
+          sectionTitle: question.sectionTitle,
+          userAnswer: selectedAnswers[index] || '',
+          timeSpent: timeSpent[index] || 0
+        }));
+        response = await quizAPI.submitAttempt(attemptId, formattedAnswers);
+      }
       
       if (response.success) {
         setResults(response.data);
@@ -232,10 +300,10 @@ const QuizById = () => {
         <div className="text-center py-12">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Quiz Not Found</h2>
           <button
-            onClick={() => navigate('/quizzes/past')}
+            onClick={navigateBack}
             className="btn-primary"
           >
-            Back to Past Quizzes
+            {isCommunityQuiz ? 'Back to Community' : 'Back to Past Quizzes'}
           </button>
         </div>
       </div>
@@ -288,17 +356,26 @@ const QuizById = () => {
 
           <div className="flex justify-center space-x-4">
             <button
-              onClick={() => navigate('/quizzes/past')}
+              onClick={navigateBack}
               className="btn-secondary"
             >
-              Back to Past Quizzes
+              {isCommunityQuiz ? 'Back to Community' : 'Back to Past Quizzes'}
             </button>
-            <button
-              onClick={() => navigate(`/quiz/history/${quizId}`)}
-              className="btn-primary"
-            >
-              View Detailed Results
-            </button>
+            {!isCommunityQuiz ? (
+              <button
+                onClick={() => navigate(`/quiz/history/${quizId}`)}
+                className="btn-primary"
+              >
+                View Detailed Results
+              </button>
+            ) : (
+              <button
+                onClick={() => navigate(`/community/${communityId}/quiz/${quizId}/leaderboard`)}
+                className="btn-primary"
+              >
+                View Leaderboard
+              </button>
+            )}
           </div>
         </motion.div>
       </div>
@@ -338,7 +415,7 @@ const QuizById = () => {
 
           <div className="flex justify-center space-x-4">
             <button
-              onClick={() => navigate('/quizzes/past')}
+              onClick={navigateBack}
               className="btn-secondary"
             >
               Back
@@ -427,33 +504,43 @@ const QuizById = () => {
               {currentQ.question}
             </h2>
             
-            {/* Multiple Choice Questions */}
-            {currentQ.type === 'multiple-choice' && currentQ.options && (
+            {/* Multiple Choice Questions - handles both regular quizzes (with type) and community quizzes (with options) */}
+            {(currentQ.type === 'multiple-choice' || (currentQ.options && Array.isArray(currentQ.options) && currentQ.options.length > 0)) && (
               <div className="space-y-3">
-                {currentQ.options.map((option, optionIndex) => (
-                  <button
-                    key={optionIndex}
-                    onClick={() => handleAnswerSelect(currentQuestion, option.text)}
-                    className={`w-full p-4 text-left rounded-lg border-2 transition-colors ${
-                      selectedAnswers[currentQuestion] === option.text
-                        ? 'border-indigo-500 bg-indigo-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <div className="flex items-center">
-                      <div className={`w-4 h-4 rounded-full border-2 mr-3 ${
-                        selectedAnswers[currentQuestion] === option.text
-                          ? 'border-indigo-500 bg-indigo-500'
-                          : 'border-gray-300'
-                      }`}>
-                        {selectedAnswers[currentQuestion] === option.text && (
-                          <CheckIcon className="w-3 h-3 text-white" />
-                        )}
+                {currentQ.options.map((option, optionIndex) => {
+                  // Handle both string options (community quizzes) and object options (regular quizzes)
+                  const optionText = typeof option === 'string' ? option : option.text;
+                  return (
+                    <button
+                      key={optionIndex}
+                      onClick={() => handleAnswerSelect(currentQuestion, isCommunityQuiz ? optionIndex : optionText)}
+                      className={`w-full p-4 text-left rounded-lg border-2 transition-colors ${
+                        (isCommunityQuiz 
+                          ? selectedAnswers[currentQuestion] === optionIndex
+                          : selectedAnswers[currentQuestion] === optionText)
+                          ? 'border-indigo-500 bg-indigo-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="flex items-center">
+                        <div className={`w-4 h-4 rounded-full border-2 mr-3 ${
+                          (isCommunityQuiz 
+                            ? selectedAnswers[currentQuestion] === optionIndex
+                            : selectedAnswers[currentQuestion] === optionText)
+                            ? 'border-indigo-500 bg-indigo-500'
+                            : 'border-gray-300'
+                        }`}>
+                          {(isCommunityQuiz 
+                            ? selectedAnswers[currentQuestion] === optionIndex
+                            : selectedAnswers[currentQuestion] === optionText) && (
+                            <CheckIcon className="w-3 h-3 text-white" />
+                          )}
+                        </div>
+                        {optionText}
                       </div>
-                      {option.text}
-                    </div>
-                  </button>
-                ))}
+                    </button>
+                  );
+                })}
               </div>
             )}
 
@@ -513,27 +600,30 @@ const QuizById = () => {
               </div>
             )}
 
-            {/* Fallback for unknown question types */}
-            {!['multiple-choice', 'true-false', 'short-answer', 'essay'].includes(currentQ.type) && (
+            {/* Fallback for unknown question types - but exclude community quiz questions that have options */}
+            {currentQ.type && !['multiple-choice', 'true-false', 'short-answer', 'essay'].includes(currentQ.type) && (
               <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                 <p className="text-yellow-800">
                   Unsupported question type: {currentQ.type}
                 </p>
                 {currentQ.options && currentQ.options.length > 0 && (
                   <div className="mt-3 space-y-2">
-                    {currentQ.options.map((option, optionIndex) => (
-                      <button
-                        key={optionIndex}
-                        onClick={() => handleAnswerSelect(currentQuestion, option.text)}
-                        className={`w-full p-3 text-left rounded border transition-colors ${
-                          selectedAnswers[currentQuestion] === option.text
-                            ? 'border-indigo-500 bg-indigo-50'
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                      >
-                        {option.text}
-                      </button>
-                    ))}
+                    {currentQ.options.map((option, optionIndex) => {
+                      const optionText = typeof option === 'string' ? option : option.text;
+                      return (
+                        <button
+                          key={optionIndex}
+                          onClick={() => handleAnswerSelect(currentQuestion, optionText)}
+                          className={`w-full p-3 text-left rounded border transition-colors ${
+                            selectedAnswers[currentQuestion] === optionText
+                              ? 'border-indigo-500 bg-indigo-50'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          {optionText}
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
               </div>

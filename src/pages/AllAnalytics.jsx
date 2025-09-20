@@ -46,20 +46,62 @@ const AllAnalytics = () => {
   const fetchAnalytics = async () => {
     try {
       setLoading(true);
-      const response = await analyticsAPI.getAllQuizAnalyses();
-      console.log('Analytics API response:', response);
       
-      // The API returns { success: true, data: { analyses: [...] } }
-      if (response && response.data && Array.isArray(response.data.analyses)) {
-        setAnalytics(response.data.analyses);
-      } else if (response && Array.isArray(response.analyses)) {
-        setAnalytics(response.analyses);
-      } else if (Array.isArray(response)) {
-        setAnalytics(response);
-      } else {
-        console.warn('Analytics API returned unexpected data structure:', response);
-        setAnalytics([]);
+      console.log('Fetching analytics data...');
+      
+      // Fetch both regular and community quiz analytics
+      const [regularResponse, communityResponse] = await Promise.all([
+        analyticsAPI.getAllQuizAnalyses().catch(err => {
+          console.error('Regular analytics error:', err);
+          return { data: { analyses: [] } };
+        }),
+        analyticsAPI.getCommunityQuizAnalyses().catch(err => {
+          console.error('Community analytics error:', err);
+          return { data: { analyses: [] } };
+        })
+      ]);
+      
+      console.log('Regular Analytics API response:', regularResponse);
+      console.log('Community Analytics API response:', communityResponse);
+      
+      let allAnalytics = [];
+      
+      // Process regular quiz analytics
+      if (regularResponse && regularResponse.data && Array.isArray(regularResponse.data.analyses)) {
+        console.log('Adding regular analytics:', regularResponse.data.analyses.length);
+        allAnalytics = [...allAnalytics, ...regularResponse.data.analyses];
+      } else if (regularResponse && Array.isArray(regularResponse.analyses)) {
+        console.log('Adding regular analytics (alt format):', regularResponse.analyses.length);
+        allAnalytics = [...allAnalytics, ...regularResponse.analyses];
+      } else if (Array.isArray(regularResponse)) {
+        console.log('Adding regular analytics (array format):', regularResponse.length);
+        allAnalytics = [...allAnalytics, ...regularResponse];
       }
+      
+      // Process community quiz analytics
+      if (communityResponse && communityResponse.data && Array.isArray(communityResponse.data.analyses)) {
+        console.log('Adding community analytics:', communityResponse.data.analyses.length);
+        allAnalytics = [...allAnalytics, ...communityResponse.data.analyses];
+      } else if (communityResponse && Array.isArray(communityResponse.analyses)) {
+        console.log('Adding community analytics (alt format):', communityResponse.analyses.length);
+        allAnalytics = [...allAnalytics, ...communityResponse.analyses];
+      } else if (Array.isArray(communityResponse)) {
+        console.log('Adding community analytics (array format):', communityResponse.length);
+        allAnalytics = [...allAnalytics, ...communityResponse];
+      }
+      
+      console.log('Total analytics before sorting:', allAnalytics.length);
+      
+      // Sort by last attempt date (most recent first)
+      allAnalytics.sort((a, b) => {
+        const dateA = new Date(a.performance?.lastAttempt || a.latestAnalysis?.completedAt || 0);
+        const dateB = new Date(b.performance?.lastAttempt || b.latestAnalysis?.completedAt || 0);
+        return dateB - dateA;
+      });
+      
+      console.log('Final combined analytics:', allAnalytics);
+      setAnalytics(allAnalytics);
+      
     } catch (error) {
       console.error('Error fetching analytics:', error);
       setAnalytics([]);
@@ -227,13 +269,33 @@ const AllAnalytics = () => {
                     {/* Quiz Header */}
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-blue-100 rounded-lg">
-                          <DocumentTextIcon className="w-5 h-5 text-blue-600" />
+                        <div className={`p-2 rounded-lg ${
+                          analysis.quiz.category === 'community' || analysis.quiz.type === 'community'
+                            ? 'bg-purple-100' 
+                            : 'bg-blue-100'
+                        }`}>
+                          <DocumentTextIcon className={`w-5 h-5 ${
+                            analysis.quiz.category === 'community' || analysis.quiz.type === 'community'
+                              ? 'text-purple-600' 
+                              : 'text-blue-600'
+                          }`} />
                         </div>
                         <div>
-                          <h3 className="text-lg font-semibold text-gray-900 line-clamp-1">
-                            {analysis.quiz.title || 'Untitled Quiz'}
-                          </h3>
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="text-lg font-semibold text-gray-900 line-clamp-1">
+                              {analysis.quiz.title || 'Untitled Quiz'}
+                            </h3>
+                            {(analysis.quiz.category === 'community' || analysis.quiz.type === 'community') && (
+                              <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded-full">
+                                Community
+                              </span>
+                            )}
+                            {analysis.community && (
+                              <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
+                                {analysis.community.name}
+                              </span>
+                            )}
+                          </div>
                           <p className="text-sm text-gray-500 flex items-center">
                             <CalendarIcon className="w-4 h-4 mr-1" />
                             {analysis.performance.totalAttempts} attempt{analysis.performance.totalAttempts > 1 ? 's' : ''}
