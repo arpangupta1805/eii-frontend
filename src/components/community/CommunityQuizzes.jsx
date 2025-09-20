@@ -134,7 +134,26 @@ const CommunityQuizzes = ({ communityId, community }) => {
       }
 
       if (response.success) {
-        toast.success('Quiz created successfully!');
+        // Show different messages based on quiz type
+        if (quizForm.type === 'private') {
+          const accessCode = response.data?.accessCode;
+          if (accessCode) {
+            toast.success(
+              `Private quiz created! Access code: ${accessCode}`, 
+              { duration: 6000 }
+            );
+            // Copy access code to clipboard
+            if (navigator.clipboard) {
+              navigator.clipboard.writeText(accessCode);
+              toast.success('Access code copied to clipboard!', { duration: 3000 });
+            }
+          } else {
+            toast.success('Private quiz created successfully!');
+          }
+        } else {
+          toast.success('Quiz created successfully!');
+        }
+        
         setShowCreateModal(false);
         setQuizForm({
           title: '',
@@ -146,6 +165,11 @@ const CommunityQuizzes = ({ communityId, community }) => {
           customTopic: '',
           selectedContentId: ''
         });
+        
+        // Refresh quizzes - switch to appropriate tab if needed
+        if (quizForm.type === 'private' && activeTab !== 'private') {
+          setActiveTab('private');
+        }
         fetchQuizzes();
       }
     } catch (error) {
@@ -249,9 +273,18 @@ const CommunityQuizzes = ({ communityId, community }) => {
             {quiz.difficulty}
           </span>
           {quiz.type === 'private' && quiz.accessCode && (
-            <div className="text-xs text-gray-500 font-mono bg-gray-100 px-2 py-1 rounded">
+            <button
+              onClick={() => {
+                if (navigator.clipboard) {
+                  navigator.clipboard.writeText(quiz.accessCode);
+                  toast.success('Access code copied!', { duration: 2000 });
+                }
+              }}
+              className="text-xs text-gray-500 font-mono bg-gray-100 px-2 py-1 rounded hover:bg-gray-200 transition-colors cursor-pointer"
+              title="Click to copy access code"
+            >
               Code: {quiz.accessCode}
-            </div>
+            </button>
           )}
         </div>
       </div>
